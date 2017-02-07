@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Haritada Özel Stil</title>
+	<style type="text/css">
+		html, body { height: 100%; margin: 0; padding: 0; }
+		#map { height: 100%; }
+	</style>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+	<div id="map"></div>
+	<script type="text/javascript">
+		// global olarak kullanacağımız boş harita değişkenini tanımlıyoruz
+		var map;
+		//	global olarak kullanacağımız iaşretçiler dizisini tanımlıyoruz
+		var markers = [];
+
+		//	harita üstüdne gözükecek mekanların bilgisini saklayan diziyi tanımlıyoruz
+		var locations = [
+		{
+			title: "MBS Merkez Ofis", 
+			description: "Made by Sense İstanbul Merkez Ofisi", 
+			position: {lat: 41.031383, lng: 28.976102}
+		},
+		{
+			title: "MBS İstanbul Teknik Ofis", 
+			description: "Made by Sense İstanbul Teknik Ofisi", 
+			position: {lat: 41.068405, lng: 28.985638}
+		}
+		];
+
+		var mapStyles = [
+		{
+			"featureType": "water",
+			"elementType": "geometry.fill",
+			"stylers": [
+			{
+				"color": "#159ce1"
+			}
+			]
+		}
+		];
+
+		//	Google Maps API yüklendikten sonra tetiklenecek, harita, işaretçi ve işlemlerin oluşturulmasını sağlayan fonksiyonu tanımlıyoruz
+		function initMap(){
+			//	google api üstünden gelen Map sınıfıyla, haritanın hangi obje içinde görüntüleneceği, ve görüntülenirken hangi ayarlara sahip olacağı (merkez konumu, yakınlığı gibi) bir örnek oluşturup global olarak tanımladığımız map değişkenine atıyoruz
+			map = new google.maps.Map(document.getElementById('map'), {
+				center: {lat: 41.031383, lng: 28.976102},
+				zoom: 15,
+				styles: styles
+			});
+
+			//	işaretçilere göre sınırları belirleyip tamamının gözükmesini sağlamak için, bunların bulunacağı bir obje oluşturuyoruz
+			var bounds = new google.maps.LatLngBounds();
+
+			//	herhangi bir işaretçiye tıklandığıda o işaretçi için devreye girecen bilgi kutusunu tanımlıyoruz
+			var largeInfoWindow = new google.maps.InfoWindow();
+
+			//	konumlar dizisindeki her bir alan için bir işaretçi oluşturacağız, bunun için döngüye giriyoruz
+			for (var i = 0; i<locations.length; i++) {
+				//	ekleme işlemi işin dizideki ilgili mekanın bilgileriyle yeni bir işaretçi oluşturuyoruz
+				var marker = new google.maps.Marker({
+					map: map,
+					position: locations[i].position,
+					title: locations[i].title,
+					description: locations[i].description,
+					animation: google.maps.Animation.DROP,
+					id: i
+				});
+				//	işaretçiyi, yukarıda global olarak oluşturduğumuz işaretçiler dizisinin içine yeni bir eleman olarak ekliyoruz
+				markers.push(marker);
+
+				//	bu işaretçi ile birlikte gerekiyorsa harita gözüken alanı sınırlarını da genişletmek için bu işaretçiyi hesaba katarak sınırları genişletiyoruz
+				bounds.extend(marker.position);
+
+				//	ilgili işaretçinin tıklandığı zaman tetiklenecek fonksiyona dair bir dinleyici oluşturuyoruz
+				marker.addListener('click', function(){
+					//	ilgili işaretçiye tıklandığında bu işaretçiyi ve yukarıda oluşturduğumuz bilgi penceresi objesini, ilgili işlemi yapıp bir
+					populateInfoWindow(this, largeInfoWindow);
+				});
+			}
+			map.fitBounds(bounds);
+			//	işaretçi ve bilgi penceresi objelerini aldığı zaman, belirtilen işaretçinin bilgilerini belirtilen bilgi kutusu içine ekleyip, bilgi kutusunu işaretçi için gösterecek fonksiyonu tanımlıyoruz
+			function populateInfoWindow(marker, infowindow){
+					//	bilgi penceresinin içeriğini, fonksiyona gönreilen işaretçinin başlığını ve açıklamasını kullanarak oluşturup atayalım
+					infowindow.setContent('<div class="map-info-window"><strong>' + marker.title + '</strong><br>' + marker.description + '</div>');
+					//	bilgi penceresini açalım
+					infowindow.open(map, marker);
+				}
+
+
+			// //	yukarıda tanımladığımız işaretçiye (marker) tıklandığı zaman yine yukarıda tanımladığımız bilgi penceresinin gözükmesini istiyoruz
+			// marker.addListener('click', function(){
+			// 	infowindow.open(map, marker);
+			// });
+		}
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key={PLACE_YOUR_APIKEY_HERE}&v=3&callback=initMap"></script>
+</body>
+</html>

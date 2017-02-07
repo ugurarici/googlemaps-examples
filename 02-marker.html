@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Haritada İşaretçi</title>
+	<style type="text/css">
+		html, body { height: 100%; margin: 0; padding: 0; }
+		#map { height: 100%; }
+	</style>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+	<div id="map"></div>
+	<script type="text/javascript">
+		// global olarak kullanacağımız boş harita değişkenini tanımlıyoruz
+		var map;
+		function initMap(){
+			//	google api üstünden gelen Map sınıfıyla, haritanın hangi obje içinde görüntüleneceği, ve görüntülenirken hangi ayarlara sahip olacağı (merkez konumu, yakınlığı gibi) bir örnek oluşturup global olarak tanımladığımız map değişkenine atıyoruz
+			map = new google.maps.Map(document.getElementById('map'), {
+				center: {lat: 41.031383, lng: 28.976102},
+				zoom: 15
+			});
+
+			//	harita üzerinde işaretçi göstermek için bir konum tanımlıyoruz
+			var mbsoffice = {lat: 41.031383, lng: 28.976102};
+			//	ilgili konum bilgisini kullanarak google api ile gelen Marker sınıfından bir örnek oluşturuyoruz, bu işlemle birlikte ilgili işaretçi, tanım sırasında gönderdiğimiz harita üstünde gözükmüş oluyor
+			var marker = new google.maps.Marker({
+				position: mbsoffice,
+				map: map,
+				title: "Made by Sense Merkez Ofisi"
+			});
+		}
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key={PLACE_YOUR_APIKEY_HERE}&v=3&callback=initMap"></script>
+</body>
+</html>

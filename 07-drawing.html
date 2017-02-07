@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Harita Üzerinde Çizim ve Hesaplama</title>
+	<style type="text/css">
+		html, body { height: 100%; margin: 0; padding: 0; }
+		#map { height: 100%; }
+	</style>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+	<div id="map"></div>
+	<script type="text/javascript">
+		// global olarak kullanacağımız boş harita değişkenini tanımlıyoruz
+		var map;
+
+		//	çizim yapıldığında oluşacak poligon için bir değişken oluşturuyoruz
+		var polygon = null;
+		function initMap(){
+			//	google api üstünden gelen Map sınıfıyla, haritanın hangi obje içinde görüntüleneceği, ve görüntülenirken hangi ayarlara sahip olacağı (merkez konumu, yakınlığı gibi) bir örnek oluşturup global olarak tanımladığımız map değişkenine atıyoruz
+			map = new google.maps.Map(document.getElementById('map'), {
+				center: {lat: 41.060610, lng: 29.201464},
+				zoom: 15,
+				mapTypeId: 'hybrid'
+			});
+
+			//	
+
+			//	harita üzerinde çizim yapabilmek için çizim yöneticisi nesnesi oluşturuyoruz
+			var drawingManager = new google.maps.drawing.DrawingManager({
+				map: map,
+				drawingMode: google.maps.drawing.OverlayType.POLYGON,
+				drawingControl: true,
+				drawingControlOptions: {
+					position: google.maps.ControlPosition.TOP_LEFT,
+					drawingModes: [
+						google.maps.drawing.OverlayType.POLYGON
+					]
+				},
+				polygonOptions: {
+					fillColor: '#ff0000',
+					strokeColor: '#ff0000',
+					clickable: false,
+					editable: true
+				}
+			});
+
+			drawingManager.addListener('overlaycomplete', function(event){
+				if(polygon) polygon.setMap(null);
+				polygon = event.overlay;
+				drawingManager.setDrawingMode(null);
+				calculatePolygonArea();
+				polygon.getPath().addListener('set_at', calculatePolygonArea);
+				polygon.getPath().addListener('insert_at', calculatePolygonArea);
+			});
+
+			function calculatePolygonArea(){
+				var computedArea = google.maps.geometry.spherical.computeArea(polygon.getPath());
+				computedArea = computedArea.toLocaleString('tr-TR', {minimumFractionDigits: 3});
+				alert(computedArea + ' metrekare');
+			}
+		}
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key={PLACE_YOUR_APIKEY_HERE}&libraries=drawing&v=3&callback=initMap"></script>
+</body>
+</html>

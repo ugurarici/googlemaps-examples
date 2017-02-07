@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Harita Çalışmaları</title>
+	<style type="text/css">
+		html, body { height: 100%; margin: 0; padding: 0; }
+		#map { height: 100%; }
+		.map-info-window{width: 300px;}
+		#pano {width: 300px;height: 200px;}
+	</style>
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+	<div id="map"></div>
+	<script type="text/javascript">
+		// global olarak kullanacağımız boş harita değişkenini tanımlıyoruz
+		var map;
+		//	global olarak kullanacağımız iaşretçiler dizisini tanımlıyoruz
+		var markers = [];
+
+		//	harita üstüdne gözükecek mekanların bilgisini saklayan diziyi tanımlıyoruz
+		var locations = [
+		{
+			title: "MBS Merkez Ofis", 
+			description: "Made by Sense İstanbul Merkez Ofisi", 
+			position: {lat: 41.031383, lng: 28.976102}
+		},
+		{
+			title: "MBS İstanbul Teknik Ofis", 
+			description: "Made by Sense İstanbul Teknik Ofisi", 
+			position: {lat: 41.068405, lng: 28.985638}
+		}
+		];
+
+		//	harita için tercihe bağlı stil tanımlıyoruz. Haritadaki her alana müdahale edilebiliyor, burada sadece su rengini daha koyu bir mavi yaptık
+		//	snazzymaps.com üzerinden birçok harita stiline bakılabilir, istersek kolayca oluşturabiliriz
+		var mapStyles = [
+		{
+			"featureType": "water",
+			"elementType": "geometry.fill",
+			"stylers": [
+			{
+				"color": "#159ce1"
+			}
+			]
+		}
+		];
+
+		//	Google Maps API yüklendikten sonra tetiklenecek, harita, işaretçi ve işlemlerin oluşturulmasını sağlayan fonksiyonu tanımlıyoruz
+		function initMap(){
+			//	google api üstünden gelen Map sınıfıyla, haritanın hangi obje içinde görüntüleneceği, ve görüntülenirken hangi ayarlara sahip olacağı (merkez konumu, yakınlığı gibi) bir örnek oluşturup global olarak tanımladığımız map değişkenine atıyoruz
+			map = new google.maps.Map(document.getElementById('map'), {
+				center: {lat: 41.031383, lng: 28.976102},
+				zoom: 15,
+				styles: mapStyles
+			});
+
+			//	işaretçilere göre sınırları belirleyip tamamının gözükmesini sağlamak için, bunların bulunacağı bir obje oluşturuyoruz
+			var bounds = new google.maps.LatLngBounds();
+
+			//	herhangi bir işaretçiye tıklandığıda o işaretçi için devreye girecen bilgi kutusunu tanımlıyoruz
+			var largeInfoWindow = new google.maps.InfoWindow();
+
+			//	konumlar dizisindeki her bir alan için bir işaretçi oluşturacağız, bunun için döngüye giriyoruz
+			for (var i = 0; i<locations.length; i++) {
+				//	ekleme işlemi işin dizideki ilgili mekanın bilgileriyle yeni bir işaretçi oluşturuyoruz
+				var marker = new google.maps.Marker({
+					map: map,
+					position: locations[i].position,
+					title: locations[i].title,
+					description: locations[i].description,
+					animation: google.maps.Animation.DROP,
+					id: i
+				});
+				//	işaretçiyi, yukarıda global olarak oluşturduğumuz işaretçiler dizisinin içine yeni bir eleman olarak ekliyoruz
+				markers.push(marker);
+
+				//	bu işaretçi ile birlikte gerekiyorsa harita gözüken alanı sınırlarını da genişletmek için bu işaretçiyi hesaba katarak sınırları genişletiyoruz
+				bounds.extend(marker.position);
+
+				//	ilgili işaretçinin tıklandığı zaman tetiklenecek fonksiyona dair bir dinleyici oluşturuyoruz
+				marker.addListener('click', function(){
+					//	ilgili işaretçiye tıklandığında bu işaretçiyi ve yukarıda oluşturduğumuz bilgi penceresi objesini, ilgili işlemi yapıp bir
+					populateInfoWindow(this, largeInfoWindow);
+				});
+			}
+			map.fitBounds(bounds);
+			//	işaretçi ve bilgi penceresi objelerini aldığı zaman, belirtilen işaretçinin bilgilerini belirtilen bilgi kutusu içine ekleyip, bilgi kutusunu işaretçi için gösterecek fonksiyonu tanımlıyoruz
+			function populateInfoWindow(marker, infowindow){
+				//	bilgi penceresi içinde bölgenin sokak görüntüsünü de göstermek için Street View servisini kullanacağız
+				var streetViewService = new google.maps.StreetViewService();
+				var radius = 50;
+
+				//	bilgi penceresinin içeriğini, fonksiyona gönreilen işaretçinin başlığını ve açıklamasını kullanarak oluşturup atayalım
+				infowindow.setContent('<div class="map-info-window"><strong>' + marker.title + '</strong><br>' + marker.description + '</div>');
+
+				function getStreetView(data, status){
+					console.log("fonksiyonda");
+					//	Street View oluşturulabildiyse
+					if(status == google.maps.StreetViewStatus.OK){
+						console.log("durum tamam");
+						//	konumumuza en yakın uygun görüş noktasını alalım
+						var nearStreetViewLocation = data.location.latLng;
+						//	bu yakın noktadan bizim noktamızı görebilmek için X ekseninde (heading) hangi yöen bakacağımızı hesaplatalım
+						var heading = google.maps.geometry.spherical.computeHeading(nearStreetViewLocation, marker.position);
+						console.log(heading);
+						//	bilgi penceresi içerisine, panoramanın görüneceği bir alan yerleştirelim
+						infowindow.setContent(infowindow.content + '<div id="pano"></div>');
+						//	görünecek panoramanın ayarlarını tanımlayalım
+						var panoramaOptions = {
+							position: nearStreetViewLocation,
+							pov: {
+								heading: heading,
+								pitch: 30,
+								zoom: 0
+							}
+						};
+						//	bilgi penceresinde panorama için oluşturduğumuz kutuya, yukarıda tanımladığımız ayarlarla gelmesi için panoramayı oluşturalım
+						var panorama = new google.maps.StreetViewPanorama(document.getElementById('pano'), panoramaOptions);
+					}
+				}
+
+				//	sokak görünümü için Street View Service üzerinden talepte bulunalım, bu işlemin ardından son parametrede ismini verdiğimiz fonksiyon tetiklenecek
+				streetViewService.getPanoramaByLocation(marker.position, radius, getStreetView);
+
+				//	bilgi penceresini açalım
+				infowindow.open(map, marker);
+			}
+
+
+			// //	yukarıda tanımladığımız işaretçiye (marker) tıklandığı zaman yine yukarıda tanımladığımız bilgi penceresinin gözükmesini istiyoruz
+			// marker.addListener('click', function(){
+			// 	infowindow.open(map, marker);
+			// });
+		}
+	</script>
+	<script async defer src="https://maps.googleapis.com/maps/api/js?key={PLACE_YOUR_APIKEY_HERE}&libraries=geometry&v=3&callback=initMap"></script>
+</body>
+</html>
